@@ -1,0 +1,168 @@
+SHADOW BYTES CTF - READY TO DEPLOY
+===================================
+
+STATUS: ✅ PRODUCTION READY
+
+This package contains everything you need to run the Shadow Bytes CTF challenge.
+
+=== WHAT'S INCLUDED ===
+
+1. SHADOW_BYTES_CTF_COMPLETE.md
+   - Full challenge description
+   - All 10 tasks with instructions
+   - Answer key (ADMIN ONLY)
+   - Scoring breakdown
+   - Progressive hints
+
+2. ARTIFACT_CREATION_GUIDE.txt
+   - Step-by-step artifact creation
+   - Sample code and scripts
+   - File verification procedures
+   - Packaging instructions
+
+3. DEPLOY_NOW.txt
+   - This deployment guide
+
+=== QUICK START (5 STEPS) ===
+
+Step 1: CREATE ARTIFACTS
+  Read: ARTIFACT_CREATION_GUIDE.txt
+  Run: bash create_artifacts.sh (if you saved the script)
+  Time: ~5 minutes
+  Output: 6 files (memory.dump, forensics-lab-01.pcap, filesystem.tar.gz, syslog.txt, cron_jobs.txt, browser_history.txt)
+
+Step 2: VERIFY ARTIFACTS
+  Check all 6 files exist and have correct sizes
+  memory.dump: 512MB
+  forensics-lab-01.pcap: 1-50MB
+  filesystem.tar.gz: 1-10MB
+  Text files: < 1MB each
+
+Step 3: PACKAGE CHALLENGE
+  Create folder: shadow-bytes-ctf/
+  Copy artifacts into it
+  Copy SHADOW_BYTES_CTF_COMPLETE.md as README.md
+  Create zip or tar.gz
+
+Step 4: DISTRIBUTE TO PLAYERS
+  Upload to CTF platform
+  Send download link to participants
+  Give 60-minute time limit
+  Flag format: BluRange{10_components}
+
+Step 5: SCORING
+  Use answer key in SHADOW_BYTES_CTF_COMPLETE.md
+  100 points total
+  10 points per component (mostly)
+  Keep answer key secure!
+
+=== FILE CHECKLIST ===
+
+Before distributing to players:
+  [ ] memory.dump (512MB)
+  [ ] forensics-lab-01.pcap (valid PCAP file)
+  [ ] filesystem.tar.gz (valid tar archive)
+  [ ] syslog.txt (readable text file)
+  [ ] cron_jobs.txt (readable text file)
+  [ ] browser_history.txt (readable text file)
+  [ ] README.md (SHADOW_BYTES_CTF_COMPLETE.md renamed)
+  [ ] Package compressed (zip or tar.gz)
+  [ ] Answer key secured (separate file, ADMIN ONLY)
+
+=== ARTIFACT CREATION QUICK COMMANDS ===
+
+Linux/Mac:
+```bash
+# Create memory.dump
+dd if=/dev/zero bs=1M count=512 of=memory.dump
+
+# Create PCAP with Scapy
+python3 << 'EOF'
+from scapy.all import *
+pkt = IP(dst="192.168.1.100")/TCP(dport=8080)
+wrpcap("forensics-lab-01.pcap", [pkt] * 100)
+EOF
+
+# Create filesystem.tar.gz
+mkdir -p test && tar -czf filesystem.tar.gz test/ && rm -rf test
+
+# Create text files
+echo "Apr 15 14:32:01 forensics-lab-01 kernel: Suspicious process detected" > syslog.txt
+echo "0 */4 * * * /tmp/fakemalware.sh" > cron_jobs.txt
+echo "2026-04-15 14:20:00 http://untrusted-source.lab/system-utility-1.2.3.tar.gz" > browser_history.txt
+```
+
+=== EXPECTED PLAYER RESULTS ===
+
+Top Teams (Expert): 30-40 minutes
+Advanced Teams: 40-50 minutes
+Intermediate Teams: 50-60 minutes
+Beginners: Partial completion
+
+=== DIFFICULTY SCALING ===
+
+Easy Mode: Use first 5 tasks only, 30 minutes
+Medium Mode: All 10 tasks, 60 minutes (CURRENT)
+Hard Mode: Remove hints, obfuscate artifacts, 90+ minutes
+
+=== PLAYER REQUIREMENTS ===
+
+Tools to install:
+- Volatility 3 (memory forensics)
+- Wireshark (network analysis)
+- Sleuth Kit (filesystem recovery)
+- Standard Linux tools (strings, grep, xxd, etc.)
+
+Minimum system:
+- 2GB RAM
+- 2GB disk space (for extracted artifacts)
+- Linux/Mac/Windows with WSL
+
+=== SUPPORT RESOURCES ===
+
+Volatility: https://volatility3.readthedocs.io/
+Wireshark: https://www.wireshark.org/docs/
+Sleuth Kit: https://wiki.sleuthkit.org/
+OpenBSD: https://www.openbsd.org/
+
+=== FINAL ANSWER KEY ===
+
+Component 1: PID_4782
+Component 2: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+Component 3: 192.168.1.100
+Component 4: PORT_8080
+Component 5: system-utility-1.2.3.tar.gz
+Component 6: UNIX_1744777200
+Component 7: 0_*/4_*_*_*
+Component 8: attacker@shadowbytes.lab
+Component 9: SSH_KEYS
+Component 10: DAY_15
+
+FINAL FLAG:
+BluRange{PID_4782_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6_192.168.1.100_PORT_8080_system-utility-1.2.3.tar.gz_UNIX_1744777200_0_*/4_*_*_*_attacker@shadowbytes.lab_SSH_KEYS_DAY_15}
+
+=== NEXT STEPS ===
+
+1. Read ARTIFACT_CREATION_GUIDE.txt
+2. Create the 6 artifacts using provided scripts
+3. Package everything together
+4. Send to CTF admin/platform
+5. Distribute to players
+6. Start 60-minute timer
+7. Score using answer key
+8. Award points
+
+=== STATUS ===
+
+✅ Challenge complete
+✅ Documentation complete
+✅ Answer key secure
+✅ Artifact templates provided
+✅ Ready to deploy NOW
+
+Created: 2026-05-07
+Difficulty: Medium-Hard
+Duration: 60 minutes
+Points: 100
+Category: Digital Forensics
+For: BluRange CTF

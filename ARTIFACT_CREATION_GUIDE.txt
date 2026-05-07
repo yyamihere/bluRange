@@ -1,0 +1,246 @@
+ARTIFACT CREATION GUIDE - Shadow Bytes CTF
+============================================
+
+This guide shows you how to create the 6 forensic artifacts needed for the challenge.
+
+=== ARTIFACT 1: memory.dump ===
+
+Create a 512MB dummy memory file:
+
+```bash
+dd if=/dev/zero bs=1M count=512 of=memory.dump
+```
+
+Or on Windows:
+```
+fsutil file createnew memory.dump 536870912
+```
+
+=== ARTIFACT 2: forensics-lab-01.pcap ===
+
+Method A: Use tcpdump (if you have network access):
+```bash
+sudo tcpdump -i eth0 -w forensics-lab-01.pcap -c 1000
+```
+
+Method B: Create sample PCAP with Scapy:
+```python
+from scapy.all import *
+
+# Create DNS query packet
+pkt1 = IP(dst="8.8.8.8")/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname="shadowbytes.lab"))
+
+# Create HTTP POST to C2
+pkt2 = IP(src="192.168.1.50", dst="192.168.1.100")/TCP(dport=8080)
+pkt2 = pkt2/Raw(load=b"POST /api/data HTTP/1.1\r\nHost: 192.168.1.100\r\nContent-Length: 100\r\n\r\nSSH_KEYS_DATA_HERE")
+
+# Create multiple packets
+packets = [pkt1, pkt2] * 50  # Repeat to make it realistic
+
+# Write to PCAP
+wrpcap("forensics-lab-01.pcap", packets)
+```
+
+Run with: `python3 script.py`
+
+=== ARTIFACT 3: filesystem.tar.gz ===
+
+Create a directory structure and archive:
+
+```bash
+mkdir -p filesystem/tmp
+mkdir -p filesystem/home/user/.ssh
+mkdir -p filesystem/root/.config
+
+# Create some sample files
+echo "SSH_KEY_CONTENT_HERE" > filesystem/home/user/.ssh/id_rsa
+echo "malware_config" > filesystem/root/.config/malware.conf
+echo "sample data" > filesystem/tmp/payload
+
+# Create the tarball
+tar -czf filesystem.tar.gz filesystem/
+```
+
+=== ARTIFACT 4: syslog.txt ===
+
+Create with this content:
+
+```
+Apr 15 14:32:01 forensics-lab-01 kernel: [12345.678901] Suspicious process detected
+Apr 15 14:32:30 forensics-lab-01 kernel: wget: retrieving http://untrusted-source.lab/system-utility-1.2.3.tar.gz
+Apr 15 14:32:45 forensics-lab-01 kernel: tar extraction started
+Apr 15 14:33:12 forensics-lab-01 root: system-utility-1.2.3.tar.gz installed successfully
+Apr 15 14:33:20 forensics-lab-01 cron[1234]: (root) INSTALL (0 */4 * * * /tmp/fakemalware.sh)
+Apr 15 14:35:00 forensics-lab-01 httpd[4782]: GET /api/data from 127.0.0.1
+Apr 15 16:00:00 forensics-lab-01 sshd: Connection from 192.168.1.100
+Apr 15 18:00:00 forensics-lab-01 kernel: PID 4782 accessing /home/user/.ssh/id_rsa
+```
+
+Save as: syslog.txt
+
+=== ARTIFACT 5: cron_jobs.txt ===
+
+Create with this content:
+
+```
+# Recovered cron jobs for root user
+
+# Environment variables
+SHELL=/bin/sh
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+MAILTO=root
+
+# Malicious cron job
+0 */4 * * * /tmp/fakemalware.sh
+
+# Standard system cron jobs (for realism)
+0 2 * * * /usr/sbin/logrotate /etc/logrotate.conf
+17 * * * * root cd / && run-parts --report /etc/cron.hourly
+```
+
+Save as: cron_jobs.txt
+
+=== ARTIFACT 6: browser_history.txt ===
+
+Create with this content:
+
+```
+2026-04-15 14:20:00 http://untrusted-source.lab/downloads/system-utility-1.2.3.tar.gz [DOWNLOADED]
+2026-04-15 14:22:00 http://github.com/fake-repo/tools [VISITED]
+2026-04-15 14:25:00 file:///tmp/system-utility-1.2.3.tar.gz [LOCAL FILE]
+2026-04-15 14:30:00 http://localhost/installer [EXECUTED]
+2026-04-15 16:00:00 http://192.168.1.100:8080/api/data [POST REQUEST]
+2026-04-15 18:00:00 http://192.168.1.100:8080/api/data [POST REQUEST]
+2026-04-15 20:00:00 http://192.168.1.100:8080/api/data [POST REQUEST]
+```
+
+Save as: browser_history.txt
+
+=== QUICK CREATION SCRIPT ===
+
+Save this as create_artifacts.sh:
+
+```bash
+#!/bin/bash
+
+echo "[*] Creating Shadow Bytes CTF artifacts..."
+
+# Artifact 1: Memory dump
+echo "[+] Creating memory.dump (512MB)..."
+dd if=/dev/zero bs=1M count=512 of=memory.dump 2>/dev/null
+
+# Artifact 2: PCAP (using Python)
+echo "[+] Creating forensics-lab-01.pcap..."
+python3 << 'EOF'
+from scapy.all import *
+pkt1 = IP(dst="8.8.8.8")/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname="shadowbytes.lab"))
+pkt2 = IP(src="192.168.1.50", dst="192.168.1.100")/TCP(dport=8080)/Raw(load=b"POST /api/data HTTP/1.1")
+packets = [pkt1, pkt2] * 50
+wrpcap("forensics-lab-01.pcap", packets)
+EOF
+
+# Artifact 3: Filesystem
+echo "[+] Creating filesystem.tar.gz..."
+mkdir -p filesystem/tmp filesystem/home/user/.ssh filesystem/root/.config
+echo "SSH_KEY_DATA" > filesystem/home/user/.ssh/id_rsa
+echo "malware_config" > filesystem/root/.config/malware.conf
+tar -czf filesystem.tar.gz filesystem/ 2>/dev/null
+rm -rf filesystem
+
+# Artifact 4: Syslog
+echo "[+] Creating syslog.txt..."
+cat > syslog.txt << 'LOG'
+Apr 15 14:32:01 forensics-lab-01 kernel: [12345.678901] Suspicious process detected
+Apr 15 14:32:30 forensics-lab-01 kernel: wget: retrieving http://untrusted-source.lab/system-utility-1.2.3.tar.gz
+Apr 15 14:32:45 forensics-lab-01 kernel: tar extraction started
+Apr 15 14:33:12 forensics-lab-01 root: system-utility-1.2.3.tar.gz installed successfully
+Apr 15 14:33:20 forensics-lab-01 cron[1234]: (root) INSTALL (0 */4 * * * /tmp/fakemalware.sh)
+Apr 15 14:35:00 forensics-lab-01 httpd[4782]: GET /api/data from 127.0.0.1
+Apr 15 16:00:00 forensics-lab-01 kernel: PID 4782 accessing /home/user/.ssh/id_rsa
+LOG
+
+# Artifact 5: Cron jobs
+echo "[+] Creating cron_jobs.txt..."
+cat > cron_jobs.txt << 'CRON'
+0 */4 * * * /tmp/fakemalware.sh
+17 * * * * root cd / && run-parts --report /etc/cron.hourly
+CRON
+
+# Artifact 6: Browser history
+echo "[+] Creating browser_history.txt..."
+cat > browser_history.txt << 'HIST'
+2026-04-15 14:20:00 http://untrusted-source.lab/downloads/system-utility-1.2.3.tar.gz [DOWNLOADED]
+2026-04-15 14:22:00 http://github.com/fake-repo/tools [VISITED]
+2026-04-15 14:25:00 file:///tmp/system-utility-1.2.3.tar.gz [LOCAL FILE]
+2026-04-15 14:30:00 http://localhost/installer [EXECUTED]
+2026-04-15 16:00:00 http://192.168.1.100:8080/api/data [POST REQUEST]
+HIST
+
+echo "[+] All artifacts created successfully!"
+echo "[*] Files:"
+ls -lh *.dump *.pcap *.gz *.txt 2>/dev/null
+```
+
+Run with: `bash create_artifacts.sh`
+
+=== FILE VERIFICATION ===
+
+After creation, verify all files:
+
+```bash
+ls -lh memory.dump forensics-lab-01.pcap filesystem.tar.gz syslog.txt cron_jobs.txt browser_history.txt
+
+# Check file types
+file memory.dump
+file forensics-lab-01.pcap
+file filesystem.tar.gz
+
+# Verify PCAP validity
+tcpdump -r forensics-lab-01.pcap | head -5
+
+# Verify tar archive
+tar -tzf filesystem.tar.gz | head -10
+```
+
+=== PACKAGE FOR DISTRIBUTION ===
+
+After creating all 6 artifacts:
+
+```bash
+mkdir shadow-bytes-ctf
+cp memory.dump forensics-lab-01.pcap filesystem.tar.gz syslog.txt cron_jobs.txt browser_history.txt shadow-bytes-ctf/
+cp CHALLENGE.md shadow-bytes-ctf/README.md
+
+tar -czf shadow-bytes-ctf.tar.gz shadow-bytes-ctf/
+zip -r shadow-bytes-ctf.zip shadow-bytes-ctf/
+
+ls -lh shadow-bytes-ctf.tar.gz shadow-bytes-ctf.zip
+```
+
+=== NOTES ===
+
+- memory.dump: 512MB minimum (can be larger for realism)
+- forensics-lab-01.pcap: Should be 10-50MB when valid
+- filesystem.tar.gz: Usually 1-10MB
+- Text files: < 1MB each
+- Total package size: ~600MB
+
+=== REQUIRED FOR CREATION ===
+
+- Python 3 with Scapy library
+- Standard Linux tools (tar, dd, etc.)
+- Bash shell
+- ~1GB free disk space
+
+Install Scapy:
+```bash
+pip3 install scapy
+```
+
+=== TIME TO CREATE ===
+
+- Quick creation (script): ~5 minutes
+- Manual creation: ~15 minutes
+- Verification: ~2 minutes
+- Packaging: ~2 minutes
+- TOTAL: ~25 minutes
